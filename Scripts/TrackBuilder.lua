@@ -10,6 +10,7 @@ function TrackBuilder.client_onCreate( self, dt )
     self.offset = sm.vec3.new(0,0,0)
     self.selected_index = 1
     self.gui = sm.gui.createSeatGui()
+    self.overlay = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/Layouts/controls.layout", false, {isHud = true, isInteractive = false, needsCursor = false})
     self:client_initialize()
 end
 
@@ -168,6 +169,7 @@ function TrackBuilder.client_onInteract( self, character, state )
         character:setLockingInteractable( self.interactable )
         sm.camera.setCameraState( 3 )
         self.gui:open()
+        self.overlay:open()
         sm.localPlayer.setLockedControls( true )
         self.reset_lock = true
 	end
@@ -258,8 +260,30 @@ function TrackBuilder.client_onAction( self, input, active )
         sm.localPlayer.setLockedControls( false )
         sm.camera.setCameraState( 0 )
         self.gui:close()
+        self.overlay:close()
     end
+
+    self:updateOverlay()
     return true
+end
+
+function TrackBuilder.updateOverlay( self )
+    if not self.overlay:isActive() then return end
+    print(self.overlay)
+    local data = ""
+    local color = "ffffff"
+    local add = function(text)data = data .. text .."\n#" .. color end
+
+    local random = self.random_rotation and "#00ff00ON" or "#ff0000OFF"
+    add("[#ffa500"..sm.gui.getKeyBinding( "Use", false ).."#ffffff] to finalize build")
+    add("[#ffa500"..sm.gui.getKeyBinding( "Jump", false ).."#ffffff] random rotate "..string.format("%s", random))
+    add("[#ffa500"..sm.gui.getKeyBinding( "Forward", false )..sm.gui.getKeyBinding( "StrafeLeft", false )..sm.gui.getKeyBinding( "Backward", false )..sm.gui.getKeyBinding( "StrafeRight", false ).."#ffffff] to move")
+    add("[#ffa500Scroll#ffffff] to rotate")
+    add("[#ffa500"..sm.gui.getKeyBinding( "Attack", false ).."#ffffff] to place")
+    add("[#ffa500"..sm.gui.getKeyBinding( "Create", false ).."#ffffff] to delete")
+    add("[#ffa500Any#ffffff] to exit")
+
+    self.overlay:setText( "BOTTOMLEFT", data )
 end
 
 local blk_glue_md_rmv = sm.uuid.new("8521a2a2-6da6-4167-a439-28eed83dc50f")
