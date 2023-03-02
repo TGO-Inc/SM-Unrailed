@@ -1,0 +1,16 @@
+{
+	"toolList": [
+		{
+			"name": "Track Hammer",
+			"previewRenderable": "$GAME_DATA/Character/Char_Tools/char_sledgehammer_preview.rend",
+			"previewRotation": [ -1, 0, 0, 0, 0, 1, 0, 1, 0 ],
+			"script": {
+				"class": "TrackHammer",
+				"data": {},
+				"file": "$CONTENT_DATA/Scripts/TrackHammer.lua"
+			},
+			"uuid": "d59d8272-0166-4813-af0c-d1f576aaf36a",
+			"showInInventory": false
+		}
+	]
+}

@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Resource" version="1.1">
+    <Resource type="ResourceImageSet" name="ItemIconsSet0">
+        <Group name="ItemIcons" texture="IconMap.png" size="96 96">
+            <Index name="Empty">
+                <Frame point="0 0"/>
+            </Index>
+            <Index name="b473a615-4675-4bfd-a4af-92af6d0f8ddc">
+                <Frame point="0 0"/>
+            </Index>
+            <Index name="ef38d8dd-ca68-4f25-a3e3-c2d98fe5d4b0">
+                <Frame point="96 0"/>
+            </Index>
+            <Index name="86a33a0b-c1c1-4325-be81-c7f2ef9db769">
+                <Frame point="192 0"/>
+            </Index>
+            <Index name="96de8dce-5b70-4c49-9984-e2c2cd1093da">
+                <Frame point="288 0"/>
+            </Index>
+            <Index name="16de3dce-5b50-4c49-9884-e2c2cd1093da">
+                <Frame point="384 0"/>
+            </Index>
+            <Index name="d2aeffb8-13a8-4bb3-bda1-6f4e2a3765b1">
+                <Frame point="0 96"/>
+            </Index>
+            <Index name="97b064db-f293-4ade-9c2e-8644d694e850">
+                <Frame point="96 96"/>
+            </Index>
+            <Index name="bf55b475-3322-4464-830e-eea0c348beed">
+                <Frame point="192 96"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0320">
+                <Frame point="288 96"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0321">
+                <Frame point="384 96"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0322">
+                <Frame point="0 192"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0323">
+                <Frame point="96 192"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0324">
+                <Frame point="192 192"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0325">
+                <Frame point="288 192"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0326">
+                <Frame point="384 192"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0327">
+                <Frame point="0 288"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0328">
+                <Frame point="96 288"/>
+            </Index>
+            <Index name="2a002066-f0b0-4707-bf51-5aa69b9f0329">
+                <Frame point="192 288"/>
+            </Index>
+            <Index name="d59d8272-0166-4813-af0c-d1f576aaf36a">
+                <Frame point="288 288"/>
+            </Index>
+        </Group>
+    </Resource>
+</MyGUI>

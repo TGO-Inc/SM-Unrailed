@@ -1,0 +1,20 @@
+{
+	"lodList": [
+		{
+			
+			"minViewSize": 200,
+            "mesh": "$CONTENT_DATA/Harvestables/Mesh/rock0.fbx",
+			"subMeshMap": {
+				"rock": {
+					"material": "DifAsgNor",
+					"textureList": [
+                        "$SURVIVAL_DATA/Objects/Textures/harvests/Stone/env_nature_hvs_stone_dif.tga",
+						"$SURVIVAL_DATA/Objects/Textures/harvests/Stone/env_nature_hvs_stone_asg.tga",
+						"$SURVIVAL_DATA/Objects/Textures/harvests/Stone/env_nature_hvs_stone_nor.tga"
+					]
+				}
+			}
+		}
+	]
+}
+

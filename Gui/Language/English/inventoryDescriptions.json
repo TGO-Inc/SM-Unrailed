@@ -1,0 +1,34 @@
+{
+    "b473a615-4675-4bfd-a4af-92af6d0f8ddc": {
+        "title": "Friction Pipe",
+        "description": "It pipe. with friction"
+    },
+    "ef38d8dd-ca68-4f25-a3e3-c2d98fe5d4b0": {
+        "title": "Part Selector",
+        "description": "Selects parts and things"
+    },
+    "86a33a0b-c1c1-4325-be81-c7f2ef9db769": {
+        "title": "Part Spawner",
+        "description": "Spawns parts and things"
+    },
+    "d2aeffb8-13a8-4bb3-bda1-6f4e2a3765b1":{
+        "title": "Tough Vine Plant",
+        "description": "A potted vine plant that takes many hits"
+    },
+    "97b064db-f293-4ade-9c2e-8644d694e850":{
+        "title": "rock",
+        "description": "it rock"
+    },
+    "96de8dce-5b70-4c49-9984-e2c2cd1093da":{
+        "title": "Counter",
+        "description": "Special Counter for counting resources.\r\nU can connect counters together.\r\n1 tick Red to remove count"
+    },
+    "16de3dce-5b50-4c49-9884-e2c2cd1093da":{
+        "title": "Counter Display",
+        "description": "Connect many of these to the last counter in the chain to display single digit outputs"
+    },
+    "bf55b475-3322-4464-830e-eea0c348beed":{
+        "title": "Track Builder",
+        "description": "Connect many of these to the last counter in the chain to display single digit outputs"
+    }
+}

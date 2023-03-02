@@ -1,0 +1,103 @@
+{
+    "blockList": [
+        {
+            "dif": "$GAME_DATA/Objects/Textures/Blocks/blk_caution01_dif.tga",
+			"asg": "$GAME_DATA/Objects/Textures/Blocks/blk_caution01_asg.tga",
+			"nor": "$GAME_DATA/Textures/Materialtextures/normal_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "8521a2a2-6da6-4167-a439-28eed83dc50f"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0320"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0321"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0322"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0323"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0324"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0325"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0326"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0327"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0328"
+        },
+        {
+            "dif": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_dif.tga",
+			"asg": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_asg.tga",
+			"nor": "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_scrapwood_nor.tga",
+			"physicsMaterial": "Default",
+            "showInInventory": false,
+            "tiling": 8,
+            "uuid": "2a002066-f0b0-4707-bf51-5aa69b9f0329"
+        }
+    ]
+}
