@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="PanelSkin" position_real="0.0072916666666666668 0.84259259259259256 0.14583333333333334 0.14814814814814814">
+        <Property key="Alpha" value="0.7"/>
+        <Widget type="TextBox" skin="TextBox" position_real="0.017857142857142856 0 1 1.0625" name="BOTTOMLEFT">
+            <Property key="FontName" value="SM_Header"/>
+            <Property key="Caption" value="test"/>
+            <Property key="TextAlign" value="Left Bottom"/>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>
