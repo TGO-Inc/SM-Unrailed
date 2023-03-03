@@ -65,6 +65,12 @@ function Counter.server_connectCounters ( self )
             closest_x = closest_x:getInteractable()
             --print("X", #closest_x:getChildren())
             if #closest_x:getChildren() <= 0 then
+                local p = closest_x:getParents()
+                if #p > 0 then
+                    for _,parent in pairs(p) do
+                        if parent == self.interactable then return end
+                    end
+                end
                 closest_x:connect(self.interactable)
                 sm.event.sendToInteractable(closest_x, "server_connectCounters" )
                 --return
@@ -75,6 +81,12 @@ function Counter.server_connectCounters ( self )
             closest_y = closest_y:getInteractable()
             --print("Y", #closest_y:getChildren())
             if #closest_y:getChildren() <= 0 then
+                local p = closest_y:getParents()
+                if #p > 0 then
+                    for _,parent in pairs(p) do
+                        if parent == self.interactable then return end
+                    end
+                end
                 closest_y:connect(self.interactable)
                 sm.event.sendToInteractable(closest_y, "server_connectCounters" )
                 --return

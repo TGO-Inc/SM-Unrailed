@@ -11,6 +11,7 @@ function TrackBuilder.client_onCreate( self, dt )
     self.selected_index = 1
     self.random_rotation = false
     self.gui = sm.gui.createSeatGui()
+    self.finished_gluing = true
     self.overlay = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/Layouts/controls.layout", false, {isHud = true, isInteractive = false, needsCursor = false})
     self:client_initialize()
     self:updateOverlay()
@@ -160,7 +161,7 @@ function TrackBuilder.client_UpdateVisualBlueprint( self, blueprint )
 end
 
 function TrackBuilder.client_onInteract( self, character, state )
-	if state == true then
+	if state == true and self.finished_gluing == true then
         self:client_initialize()
         if self.visualization == nil then
             self.visualization = sm.visualization.createBlueprint("$CONTENT_DATA/Blueprints/g_13x13_concrete.blueprint")
@@ -259,17 +260,21 @@ function TrackBuilder.client_onAction( self, input, active )
         self:updateOverlay()
     end
     if input == 0 then
-        if self.visualization ~= nil then
-            self.visualization:destroy()
-        end
-        self.active_character:setLockingInteractable( nil )
-        self:client_initialize()
-        sm.localPlayer.setLockedControls( false )
-        sm.camera.setCameraState( 0 )
-        self.gui:close()
-        self.overlay:close()
+        self:client_fullExit()
     end
     return true
+end
+
+function TrackBuilder.client_fullExit( self )
+    if self.visualization ~= nil then
+        self.visualization:destroy()
+    end
+    self.active_character:setLockingInteractable( nil )
+    self:client_initialize()
+    sm.localPlayer.setLockedControls( false )
+    sm.camera.setCameraState( 0 )
+    if self.gui ~= nil and self.gui:isActive() then self.gui:close() end
+    if self.overlay ~= nil and self.overlay:isActive() then self.overlay:close() end
 end
 
 function TrackBuilder.client_confirmGlue( self, button_name )
@@ -367,14 +372,20 @@ function TrackBuilder.isValidPlacement(self ,r_s, r_e)
     end
 end
 
-function TrackBuilder.server_GlueTogether(self, data)
+function TrackBuilder.server_GlueTogether( self, data )
     self.glue_counter = 5
     self.gluing = true
     self.network:sendToClients("client_glueMessage")
 end
 
 function TrackBuilder.client_glueMessage( self )
+    self.finished_gluing = false
+    self:client_fullExit()
     sm.gui.chatMessage( "#c71212Please Wait...\n#5bb32bThe glueing proccess is going to take a bit of time#ffffff" )
+end
+
+function TrackBuilder.client_finishedGluing( self )
+    self.finished_gluing = true
 end
 
 function TrackBuilder.client_failDynamicMessage( self )
@@ -459,18 +470,20 @@ function FindBodyBounds(body)
     body = CenterBody(body)
     for _,body in pairs(body.bodies) do
         for _,shape in pairs(body.childs) do
-            local abs_pos = shape.pos
-            abs_pos = sm.vec3.new(math.abs(abs_pos.x),math.abs(abs_pos.y), math.abs(abs_pos.z))
-            local bounds_fixed = sm.vec3.new(shape.bounds.x,shape.bounds.y,shape.bounds.z)
-            local msize = abs_pos + bounds_fixed
-            if msize.x > bounds.x then
-                bounds.x = msize.x
-            end
-            if msize.y > bounds.y then
-                bounds.y = msize.y
-            end
-            if msize.z > bounds.z then
-                bounds.z = msize.z
+            if shape.bounds ~= nil then
+                local abs_pos = shape.pos
+                abs_pos = sm.vec3.new(math.abs(abs_pos.x),math.abs(abs_pos.y), math.abs(abs_pos.z))
+                local bounds_fixed = sm.vec3.new(shape.bounds.x,shape.bounds.y,shape.bounds.z)
+                local msize = abs_pos + bounds_fixed
+                if msize.x > bounds.x then
+                    bounds.x = msize.x
+                end
+                if msize.y > bounds.y then
+                    bounds.y = msize.y
+                end
+                if msize.z > bounds.z then
+                    bounds.z = msize.z
+                end
             end
         end
     end
@@ -600,7 +613,11 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
             end
         end
     end
-    if self.gluing and #self.valid_tile_positions > 0 then
+    if self.gluing then
+        if #self.valid_tile_positions == 0 then
+            self:server_glueingFinished()
+            return
+        end
         if self.glue_counter > 0 then
             local factor = sm.vec3.new(3.225,0,-3.225)
             
@@ -669,12 +686,17 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
                     end
                 end
             end
-            self.glue_index = 0
-            self.glue_counter = 0
-            self.valid_tile_positions = {}
-            self.gluing = false
+            self:server_glueingFinished()
         end
     end
+end
+
+function TrackBuilder.server_glueingFinished( self )
+    self.glue_index = 0
+    self.glue_counter = 0
+    self.valid_tile_positions = {}
+    self.gluing = false
+    self.network:sendToClients("client_finishedGluing")
 end
 
 function TrackBuilder.server_onCreate( self, dt )
