@@ -77,6 +77,7 @@ function TrackBuilder.client_onFixedUpdate( self, dt )
             end
         end
     end
+    self:updateOverlay()
 end
 
 function FloorDecimalPlaces(vector, places)
@@ -262,8 +263,6 @@ function TrackBuilder.client_onAction( self, input, active )
         self.gui:close()
         self.overlay:close()
     end
-
-    self:updateOverlay()
     return true
 end
 
