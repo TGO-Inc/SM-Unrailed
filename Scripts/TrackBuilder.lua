@@ -9,9 +9,11 @@ TrackBuilder.colorHighlight = sm.color.new("#a226b5")
 function TrackBuilder.client_onCreate( self, dt )
     self.offset = sm.vec3.new(0,0,0)
     self.selected_index = 1
+    self.random_rotation = false
     self.gui = sm.gui.createSeatGui()
     self.overlay = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/Layouts/controls.layout", false, {isHud = true, isInteractive = false, needsCursor = false})
     self:client_initialize()
+    self:updateOverlay()
 end
 
 function TrackBuilder.client_initialize(self)
@@ -26,7 +28,6 @@ function TrackBuilder.client_initialize(self)
     self.MoveTicker = 0
     self.reset_lock = false
     self.rotation_index = 0
-    self.random_rotation = false
     self.visual_offset = sm.vec3.zero()
 end
 
@@ -77,7 +78,6 @@ function TrackBuilder.client_onFixedUpdate( self, dt )
             end
         end
     end
-    self:updateOverlay()
 end
 
 function FloorDecimalPlaces(vector, places)
@@ -171,6 +171,7 @@ function TrackBuilder.client_onInteract( self, character, state )
         sm.camera.setCameraState( 3 )
         self.gui:open()
         self.overlay:open()
+        self:updateOverlay()
         sm.localPlayer.setLockedControls( true )
         self.reset_lock = true
 	end
@@ -246,11 +247,16 @@ function TrackBuilder.client_onAction( self, input, active )
         self:client_updateVisualIndex()
     end
     if input == 15 and active then
-        self.network:sendToServer("server_GlueTogether", {rotation=self.visual_rotation})
+        self.confirmClearGui = sm.gui.createGuiFromLayout( "$GAME_DATA/Gui/Layouts/PopUp/PopUp_YN.layout" )
+        self.confirmClearGui:setButtonCallback( "Yes", "client_confirmGlue" )
+        self.confirmClearGui:setButtonCallback( "No", "client_confirmGlue" )
+        self.confirmClearGui:setText( "Title", "#{MENU_YN_TITLE_ARE_YOU_SURE}" )
+        self.confirmClearGui:setText( "Message", "This will connect all tiles permanently.\nThis cannot be undone!" )
+        self.confirmClearGui:open()
     end
     if input == 16 and active then
         self.random_rotation = self.random_rotation ~= true
-        print(self.random_rotation)
+        self:updateOverlay()
     end
     if input == 0 then
         if self.visualization ~= nil then
@@ -266,21 +272,29 @@ function TrackBuilder.client_onAction( self, input, active )
     return true
 end
 
+function TrackBuilder.client_confirmGlue( self, button_name )
+    if button_name == "Yes" then
+        self.network:sendToServer("server_GlueTogether", {rotation=self.visual_rotation})
+    end
+    self.confirmClearGui:close()
+    self.confirmClearGui = nil
+end
+
 function TrackBuilder.updateOverlay( self )
-    if not self.overlay:isActive() then return end
-    print(self.overlay)
+    --if not self.overlay:isActive() then return end
+    
     local data = ""
     local color = "ffffff"
     local add = function(text)data = data .. text .."\n#" .. color end
 
-    local random = self.random_rotation and "#00ff00ON" or "#ff0000OFF"
-    add("[#ffa500"..sm.gui.getKeyBinding( "Use", false ).."#ffffff] to finalize build")
-    add("[#ffa500"..sm.gui.getKeyBinding( "Jump", false ).."#ffffff] random rotate "..string.format("%s", random))
-    add("[#ffa500"..sm.gui.getKeyBinding( "Forward", false )..sm.gui.getKeyBinding( "StrafeLeft", false )..sm.gui.getKeyBinding( "Backward", false )..sm.gui.getKeyBinding( "StrafeRight", false ).."#ffffff] to move")
-    add("[#ffa500Scroll#ffffff] to rotate")
-    add("[#ffa500"..sm.gui.getKeyBinding( "Attack", false ).."#ffffff] to place")
-    add("[#ffa500"..sm.gui.getKeyBinding( "Create", false ).."#ffffff] to delete")
-    add("[#ffa500Any#ffffff] to exit")
+    local random = (self.random_rotation == true) and "#00ff00ON" or "#ff0000OFF"
+    add("#ffa500"..sm.gui.getKeyBinding( "Use", false ).."#ffffff to finalize build")
+    add("#ffa500"..sm.gui.getKeyBinding( "Jump", false ).."#ffffff random rotate "..string.format("%s", random))
+    add("#ffa500"..sm.gui.getKeyBinding( "Forward", false )..sm.gui.getKeyBinding( "StrafeLeft", false )..sm.gui.getKeyBinding( "Backward", false )..sm.gui.getKeyBinding( "StrafeRight", false ).."#ffffff to move")
+    add("#ffa500Scroll#ffffff to rotate")
+    add("#ffa500"..sm.gui.getKeyBinding( "Attack", false ).."#ffffff to place")
+    add("#ffa500"..sm.gui.getKeyBinding( "Create", false ).."#ffffff to delete")
+    add("#ffa500Any#ffffff to exit")
 
     self.overlay:setText( "BOTTOMLEFT", data )
 end
@@ -354,8 +368,17 @@ function TrackBuilder.isValidPlacement(self ,r_s, r_e)
 end
 
 function TrackBuilder.server_GlueTogether(self, data)
-    self.glue_counter = 3
+    self.glue_counter = 5
     self.gluing = true
+    self.network:sendToClients("client_glueMessage")
+end
+
+function TrackBuilder.client_glueMessage( self )
+    sm.gui.chatMessage( "#c71212Please Wait...\n#5bb32bThe glueing proccess is going to take a bit of time#ffffff" )
+end
+
+function TrackBuilder.client_failDynamicMessage( self )
+    sm.gui.chatMessage( "#c71212ERROR: #ff8080Permanently failed to convert to dynamic object\nThis error should never happen.#ffffff" )
 end
 
 function TrackBuilder.client_ClampRotationIndex(self)
@@ -372,6 +395,25 @@ function TrackBuilder.client_onDestroy( self )
     if self.active_character ~= nil then
         self.visualization:destroy()
     end
+end
+
+function TrackBuilder.client_largeDeleteWarning( self )
+    self.confirmClearGui = sm.gui.createGuiFromLayout( "$GAME_DATA/Gui/Layouts/PopUp/PopUp_YN.layout" )
+    self.confirmClearGui:setButtonCallback( "Yes", "client_confirmLargeDelete" )
+    self.confirmClearGui:setButtonCallback( "No", "client_confirmLargeDelete" )
+    self.confirmClearGui:setText( "Title", "#{MENU_YN_TITLE_ARE_YOU_SURE}" )
+    self.confirmClearGui:setText( "Message", "You are about to delete a very large creation!" )
+    self.confirmClearGui:open()
+end
+
+function TrackBuilder.client_confirmLargeDelete( self, button_name )
+    if button_name == "Yes" then
+        self.network:sendToServer("server_DeleteAtPos", {last_position=self.visual_position,player=self.active_character:getPlayer()})
+    else    
+        self.network:sendToServer("server_clearBodyOnHold")
+    end
+    self.confirmClearGui:close()
+    self.confirmClearGui = nil
 end
 
 function CenterBlueprint(blueprint, state, reset_trans)
@@ -406,6 +448,35 @@ function CenterBlueprint(blueprint, state, reset_trans)
     return blueprint
 end
 
+function CenterBody(body)
+    local table = sm.creation.exportToTable(body, true, true)
+    local centered_blueprint = CenterBlueprint(table)
+    return centered_blueprint
+end
+
+function FindBodyBounds(body)
+    bounds = sm.vec3.zero()
+    body = CenterBody(body)
+    for _,body in pairs(body.bodies) do
+        for _,shape in pairs(body.childs) do
+            local abs_pos = shape.pos
+            abs_pos = sm.vec3.new(math.abs(abs_pos.x),math.abs(abs_pos.y), math.abs(abs_pos.z))
+            local bounds_fixed = sm.vec3.new(shape.bounds.x,shape.bounds.y,shape.bounds.z)
+            local msize = abs_pos + bounds_fixed
+            if msize.x > bounds.x then
+                bounds.x = msize.x
+            end
+            if msize.y > bounds.y then
+                bounds.y = msize.y
+            end
+            if msize.z > bounds.z then
+                bounds.z = msize.z
+            end
+        end
+    end
+    return bounds
+end
+
 function TrackBuilder.server_getBlueprintData( self, data )
     local parent = self.interactable:getParents()[data.index]
     if parent ~= nil and parent:getPublicData().creationString ~= nil then
@@ -415,7 +486,11 @@ function TrackBuilder.server_getBlueprintData( self, data )
     end
 end
 
-function TrackBuilder.server_DeleteAtPos(self, data)
+function TrackBuilder.server_clearBodyOnHold( self )
+    self.body_on_hold = nil
+end
+
+function TrackBuilder.server_DeleteAtPos( self, data )
     local offset = self.shape.worldRotation * sm.vec3.new(1.625,0,-1.625)
     if offset.z ~= 0 then
         offset.y = offset.z
@@ -428,17 +503,39 @@ function TrackBuilder.server_DeleteAtPos(self, data)
         end
     end
 
-    local ray_start = data.last_position + sm.vec3.new(0,0,12) + offset
-    local ray_end = data.last_position + sm.vec3.new(0,0,-2) + offset
-    local valid, result = sm.physics.raycast( ray_start, ray_end, nil, 4611 )
-    if valid then
-        if result.type == "body" then
-            for _,shape in pairs(result:getBody():getShapes()) do
+    if self.body_on_hold == nil then
+
+        local ray_start = data.last_position + sm.vec3.new(0,0,12) + offset
+        local ray_end = data.last_position + sm.vec3.new(0,0,-2) + offset
+        local valid, result = sm.physics.raycast( ray_start, ray_end, nil, 4611 )
+
+        if valid then
+            if result.type == "body" then
+                local body = result:getBody()
+                local bounds = FindBodyBounds(body)
+                if (bounds.x * bounds.y) > 1000 then
+                    self.body_on_hold = body
+                    self.network:sendToClient(data.player, "client_largeDeleteWarning")
+                    return
+                else
+                    for _,shape in pairs(body:getShapes()) do
+                        shape:destroyShape(0)
+                    end
+                end
+            end
+            self.network:sendToClient(data.player, "client_deleteNoise")
+        end
+    else
+        if sm.exists(self.body_on_hold) then
+            for _,shape in pairs(self.body_on_hold:getShapes()) do
                 shape:destroyShape(0)
             end
+            self.network:sendToClient(data.player, "client_deleteNoise")
         end
-        self.network:sendToClient(data.player, "client_deleteNoise")
+        self.body_on_hold = nil
     end
+
+    self:server_save()
 end
 
 function TrackBuilder.server_spawnTrack( self, data )
@@ -462,6 +559,7 @@ function TrackBuilder.server_spawnTrack( self, data )
             end
             table.insert(self.valid_tile_positions, data.last_position)
             self.network:sendToClient(data.player, "client_buildNoise")
+            self:server_save()
         else
             self.network:sendToClient(data.player, "client_errorBuildNoise")
         end
@@ -490,6 +588,8 @@ local glueing_positions = {
     sm.vec3.new(0,6,-1)
 }
 
+local g_last_valid_obj = nil
+
 function TrackBuilder.server_onFixedUpdate( self, dt )
     if self.pending_deletion then
         for _,body in pairs(sm.body.getAllBodies()) do
@@ -500,7 +600,7 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
             end
         end
     end
-    if self.gluing then
+    if self.gluing and #self.valid_tile_positions > 0 then
         if self.glue_counter > 0 then
             local factor = sm.vec3.new(3.225,0,-3.225)
             
@@ -514,7 +614,6 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
             if self.glue_index < #self.valid_tile_positions then
                 self.glue_index = self.glue_index + 1 
                 local position = self.valid_tile_positions[self.glue_index]
-                --for _,position in pairs(self.valid_tile_positions) do
 
                 for _,p_offset in pairs(positions) do
 
@@ -530,12 +629,14 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
                     local ray_end = position + sm.vec3.new(0,0,-2) + offset
                     local valid, gridPos, obj = self:isValidPlacement(ray_end, ray_start)
 
+                    if obj ~= nil then
+                        g_last_valid_obj = obj
+                    end
+
                     if valid then
                         sm.construction.buildBlock( blk_glue_md_rmv, gridPos, obj )
                     end
                 end
-                
-                --end
             else
                 self.glue_index = 0
                 self.glue_counter = self.glue_counter - 1
@@ -550,8 +651,16 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
             local ray_start = position + sm.vec3.new(0,0,12) + offset
             local ray_end = position + sm.vec3.new(0,0,-2) + offset
             local valid, gridPos, obj = self:isValidPlacement(ray_end, ray_start)
-            if obj ~= nil then
+            if sm.exists(obj) or sm.exists(g_last_valid_obj) then
+                if obj == nil then obj = g_last_valid_obj end
                 obj:getBody():setConvertibleToDynamic(true)
+            else
+                if #self.valid_tile_positions > 0 then
+                    table.remove(self.valid_tile_positions, 1)
+                    return
+                else
+                    self.network:sendToClients("client_failDynamicMessage")
+                end
             end
             for _,body in pairs(sm.body.getAllBodies()) do
                 for _,shape in pairs(body:getShapes()) do
@@ -560,15 +669,31 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
                     end
                 end
             end
+            self.glue_index = 0
+            self.glue_counter = 0
+            self.valid_tile_positions = {}
             self.gluing = false
         end
     end
 end
 
 function TrackBuilder.server_onCreate( self, dt )
-    self.valid_tile_positions = {}
+    self.valid_tile_positions = self.storage:load()
+    if not self.valid_tile_positions then
+        self.valid_tile_positions = {}
+    end
+
+    self.body_on_hold = nil
     self.gluing = false
     self.pending_deletion = false
     self.glue_counter = 0
     self.glue_index = 0
+end
+
+function TrackBuilder.server_save( self )
+    self.storage:save(self.valid_tile_positions)
+end
+
+function TrackBuilder.server_onUnload( self )
+    self:server_save()
 end
