@@ -148,7 +148,7 @@ function TrackBuilder.client_UpdateVisualPosition(self)
         b4posFlip.y = b4posFlip.z
         b4posFlip.z = 0
     end
-    local offset_dir_p = b4posFlip + sm.vec3.new(0,0,-24)
+    local offset_dir_p = b4posFlip + sm.vec3.new(0,0,-32)
     sm.camera.setPosition( position - offset_dir_p)
 end
 
@@ -465,31 +465,6 @@ function CenterBody(body)
     return centered_blueprint
 end
 
-function FindBodyBounds(body)
-    bounds = sm.vec3.zero()
-    body = CenterBody(body)
-    for _,body in pairs(body.bodies) do
-        for _,shape in pairs(body.childs) do
-            if shape.bounds ~= nil then
-                local abs_pos = shape.pos
-                abs_pos = sm.vec3.new(math.abs(abs_pos.x),math.abs(abs_pos.y), math.abs(abs_pos.z))
-                local bounds_fixed = sm.vec3.new(shape.bounds.x,shape.bounds.y,shape.bounds.z)
-                local msize = abs_pos + bounds_fixed
-                if msize.x > bounds.x then
-                    bounds.x = msize.x
-                end
-                if msize.y > bounds.y then
-                    bounds.y = msize.y
-                end
-                if msize.z > bounds.z then
-                    bounds.z = msize.z
-                end
-            end
-        end
-    end
-    return bounds
-end
-
 function TrackBuilder.server_getBlueprintData( self, data )
     local parent = self.interactable:getParents()[data.index]
     if parent ~= nil and parent:getPublicData().creationString ~= nil then
@@ -525,8 +500,9 @@ function TrackBuilder.server_DeleteAtPos( self, data )
         if valid then
             if result.type == "body" then
                 local body = result:getBody()
-                local bounds = FindBodyBounds(body)
-                if (bounds.x * bounds.y) > 1000 then
+                local min, max = body:getLocalAabb()
+                bounds = max - min
+                if math.abs(bounds.x * bounds.y) > 1000 then
                     self.body_on_hold = body
                     self.network:sendToClient(data.player, "client_largeDeleteWarning")
                     return
