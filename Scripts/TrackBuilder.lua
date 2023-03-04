@@ -17,18 +17,24 @@ function TrackBuilder.client_onCreate( self, dt )
     self:updateOverlay()
 end
 
-function TrackBuilder.client_initialize(self)
+function TrackBuilder.client_onDestroy( self )
+    self:client_fullExit()
+end
+
+function TrackBuilder.client_initialize( self )
     self.active_character = nil
-    self.visual_rotation = nil
+    self.visual_rotation = sm.vec3.one()
     self.visual_position = nil
     self.WisOn = false
 	self.AisOn = false
 	self.SisOn = false
 	self.DisOn = false
+    self.current_blueprint_bounds = sm.vec3.one()
     self.LeftCliclisOn = false
     self.MoveTicker = 0
     self.reset_lock = false
     self.rotation_index = 0
+    self.partial_visualization = nil
     self.visual_offset = sm.vec3.zero()
 end
 
@@ -75,7 +81,7 @@ function TrackBuilder.client_onFixedUpdate( self, dt )
             if self.LeftCliclisOn then
                 local world = self.active_character:getWorld()
                 if self.random_rotation then self:client_UpdateVisualRotation() end
-                self.network:sendToServer("server_spawnTrack", {player=self.active_character:getPlayer(),world=world, last_position=self.visual_position,offset=self.visual_offset, last_rotation=self.visual_rotation,index=self.selected_index})
+                self.network:sendToServer("server_spawnTrack", {player=self.active_character:getPlayer(),world=world, last_position=self.visual_position,offset=self.visual_offset, last_rotation=self.visual_rotation,index=self.selected_index,bounds=self.current_blueprint_bounds})
             end
         end
     end
@@ -97,13 +103,14 @@ end
 
 local LocalNorth = sm.vec3.getRotation( sm.vec3.new(0,0,1), sm.vec3.new(0,0,-1) )
 
-function TrackBuilder.client_UpdateVisualRotation(self)
-    self.visual_rotation = self.shape.worldRotation
-    self.visual_rotation = sm.quat.lookRotation(sm.quat.getUp(self.visual_rotation), sm.quat.getRight(self.visual_rotation))
+function TrackBuilder.client_UpdateVisualRotation( self )
+
+    local tmp_rotation = self.shape.worldRotation
+    tmp_rotation = sm.quat.lookRotation(sm.quat.getUp(tmp_rotation), sm.quat.getRight(tmp_rotation))
     self.last_rotation = FloorDecimalPlaces(self.shape.worldRotation, 2)
 
     local turn = sm.quat.lookRotation( sm.vec3.new(0,-1,0), sm.vec3.new(1,0,0) )
-    sm.camera.setRotation( self.visual_rotation * turn )
+    sm.camera.setRotation( tmp_rotation * turn )
 
     if self.random_rotation == true then
         local new = math.random(0,3)
@@ -111,23 +118,26 @@ function TrackBuilder.client_UpdateVisualRotation(self)
         self.rotation_index = new
     end
 
+    local mfacx = self.current_blueprint_bounds.x / 4
+    local mfacy = self.current_blueprint_bounds.y / 4
+
     if self.rotation_index == 2 then
         local nturn = sm.vec3.getRotation( sm.vec3.new(-1,0,0), sm.vec3.new(0,-1,0) )
-        self.visual_rotation = self.visual_rotation * nturn * nturn
-        self.visual_offset = self.shape.worldRotation * sm.vec3.new(0,0,-3.25)
+        tmp_rotation = tmp_rotation * nturn * nturn
+        self.visual_offset = self.shape.worldRotation * sm.vec3.new(0,0,-mfacx)
     elseif self.rotation_index == 3 then
         local nturn = sm.vec3.getRotation( sm.vec3.new(0,1,0), sm.vec3.new(1,0,0) )
-        self.visual_rotation = self.visual_rotation * nturn
-        self.visual_offset = self.shape.worldRotation * sm.vec3.new(3.25,0,-3.25)
+        tmp_rotation = tmp_rotation * nturn
+        self.visual_offset = self.shape.worldRotation * sm.vec3.new(mfacx,0,-mfacy)
     elseif self.rotation_index == 1 then
         local nturn = sm.vec3.getRotation( sm.vec3.new(1,0,0), sm.vec3.new(0,1,0) )
-        self.visual_rotation = self.visual_rotation * nturn
+        tmp_rotation = tmp_rotation * nturn
         self.visual_offset = self.shape.worldRotation * sm.vec3.new(0,0,0)
     else
-        self.visual_offset = self.shape.worldRotation * sm.vec3.new(3.25,0,0)
+        self.visual_offset = self.shape.worldRotation * sm.vec3.new(mfacy,0,0)
     end
 
-    self.visual_rotation = self.visual_rotation * LocalNorth
+    self.visual_rotation = tmp_rotation * LocalNorth
     if self.visualization ~= nil then
         self.visualization:setRotation( self.visual_rotation )
     end
@@ -135,7 +145,8 @@ function TrackBuilder.client_UpdateVisualRotation(self)
     self:client_UpdateVisualPosition()
 end
 
-function TrackBuilder.client_UpdateVisualPosition(self)
+function TrackBuilder.client_UpdateVisualPosition( self )
+
     local d_vec = self.shape.worldRotation * (sm.vec3.new(-0.5,0,0.5) + (self.offset * 3.25))
     local position = self.shape.worldPosition - d_vec
     self.visual_position = position
@@ -143,21 +154,59 @@ function TrackBuilder.client_UpdateVisualPosition(self)
         self.visualization:setPosition( position + self.visual_offset )
     end
     self.last_position = FloorDecimalPlaces(self.shape.worldPosition, 2)
-    local b4posFlip = self.shape.worldRotation * sm.vec3.new(-1.625,0,1.625)
+    local tk = (self.visual_rotation * self.current_blueprint_bounds) * 0.125
+    tk = sm.vec3.new(math.abs(tk.x), math.abs(tk.y), math.abs(tk.z))
+    local b4posFlip = self.shape.worldRotation * sm.vec3.new(-tk.x,0,tk.y)
     if b4posFlip.z > 0 then
         b4posFlip.y = b4posFlip.z
         b4posFlip.z = 0
     end
+    
     local offset_dir_p = b4posFlip + sm.vec3.new(0,0,-32)
     sm.camera.setPosition( position - offset_dir_p)
 end
 
-function TrackBuilder.client_UpdateVisualBlueprint( self, blueprint )
-    if self.visualization ~= nil then
-        self.visualization:destroy()
+function GetBlueprintBounds( blueprint )
+    bounds = sm.vec3.zero()
+    for _,body in pairs(blueprint.bodies) do
+        for _,shape in pairs(body.childs) do
+            if shape.bounds ~= nil then
+                local abs_pos = sm.vec3.new(math.abs(shape.pos.x),math.abs(shape.pos.y),math.abs(shape.pos.z))
+                local shape_bounds = sm.vec3.new(shape.bounds.x,shape.bounds.y,shape.bounds.z)
+                local tmp_bounds = abs_pos + shape_bounds
+                if tmp_bounds.x > bounds.x then bounds.x = tmp_bounds.x end
+                if tmp_bounds.y > bounds.y then bounds.y = tmp_bounds.y end
+                if tmp_bounds.z > bounds.z then bounds.z = tmp_bounds.z end
+            end
+        end
     end
-    self.visualization = sm.visualization.createBlueprint(blueprint)
-    self:client_UpdateVisualRotation()
+    return bounds
+end
+
+function TrackBuilder.client_UpdateVisualBlueprint( self, blueprint )
+    if type(blueprint) == "string" then
+        if blueprint ~= "END" then
+            if self.partial_visualization == nil and string.sub(blueprint,1,5) == "START" then
+                if self.visualization ~= nil then self.visualization:destroy() end
+                self.partial_visualization = string.sub(blueprint,6,#blueprint+1)
+            elseif self.partial_visualization ~= nil then
+                self.partial_visualization = self.partial_visualization .. blueprint
+            end
+            return
+        elseif self.partial_visualization ~= nil then
+            local _table = sm.json.parseJsonString(self.partial_visualization)
+            self.current_blueprint_bounds = GetBlueprintBounds(_table)
+            self.visualization = sm.visualization.createBlueprint(_table)
+            self.partial_visualization = nil
+            self:client_UpdateVisualRotation()
+        end
+    elseif type(blueprint) == "table" then
+        if self.partial_visualization ~= nil then self.partial_visualization = nil end
+        if self.visualization ~= nil then self.visualization:destroy() end
+        self.current_blueprint_bounds = GetBlueprintBounds(blueprint)
+        self.visualization = sm.visualization.createBlueprint(blueprint)
+        self:client_UpdateVisualRotation()
+    end
 end
 
 function TrackBuilder.client_onInteract( self, character, state )
@@ -227,12 +276,12 @@ function TrackBuilder.client_onAction( self, input, active )
         self.LeftCliclisOn = true
         local world = self.active_character:getWorld()
         if self.random_rotation then self:client_UpdateVisualRotation() end
-        self.network:sendToServer("server_spawnTrack", {player=self.active_character:getPlayer(),world=world, last_position=self.visual_position,offset=self.visual_offset, last_rotation=self.visual_rotation,index=self.selected_index})
+        self.network:sendToServer("server_spawnTrack", {player=self.active_character:getPlayer(),world=world, last_position=self.visual_position,offset=self.visual_offset, last_rotation=self.visual_rotation,index=self.selected_index,bounds=self.current_blueprint_bounds})
     elseif input == 19 and not active then
         self.LeftCliclisOn = false
     end
     if input == 18 and active then
-        self.network:sendToServer("server_DeleteAtPos", {last_position=self.visual_position,player=self.active_character:getPlayer()})
+        self.network:sendToServer("server_DeleteAtPos", {last_position=self.visual_position,player=self.active_character:getPlayer(),bounds=self.current_blueprint_bounds,offset=self.visual_offset,last_rotation=self.visual_rotation})
     end
     if input == 20 then
         self.rotation_index = self.rotation_index - 1
@@ -297,8 +346,8 @@ function TrackBuilder.updateOverlay( self )
     add("#ffa500"..sm.gui.getKeyBinding( "Jump", false ).."#ffffff random rotate "..string.format("%s", random))
     add("#ffa500"..sm.gui.getKeyBinding( "Forward", false )..sm.gui.getKeyBinding( "StrafeLeft", false )..sm.gui.getKeyBinding( "Backward", false )..sm.gui.getKeyBinding( "StrafeRight", false ).."#ffffff to move")
     add("#ffa500Scroll#ffffff to rotate")
-    add("#ffa500"..sm.gui.getKeyBinding( "Attack", false ).."#ffffff to place")
-    add("#ffa500"..sm.gui.getKeyBinding( "Create", false ).."#ffffff to delete")
+    add("#ffa500"..sm.gui.getKeyBinding( "Create", false ).."#ffffff to place")
+    add("#ffa500"..sm.gui.getKeyBinding( "Attack", false ).."#ffffff to delete")
     add("#ffa500Any#ffffff to exit")
 
     self.overlay:setText( "BOTTOMLEFT", data )
@@ -392,7 +441,7 @@ function TrackBuilder.client_failDynamicMessage( self )
     sm.gui.chatMessage( "#c71212ERROR: #ff8080Permanently failed to convert to dynamic object\nThis error should never happen.#ffffff" )
 end
 
-function TrackBuilder.client_ClampRotationIndex(self)
+function TrackBuilder.client_ClampRotationIndex( self )
     if self.rotation_index > 3 then
         self.rotation_index = 0
     end
@@ -419,7 +468,7 @@ end
 
 function TrackBuilder.client_confirmLargeDelete( self, button_name )
     if button_name == "Yes" then
-        self.network:sendToServer("server_DeleteAtPos", {last_position=self.visual_position,player=self.active_character:getPlayer()})
+        self.network:sendToServer("server_DeleteAtPos", {last_position=self.visual_position,player=self.active_character:getPlayer(),bounds=self.current_blueprint_bounds,offset=self.visual_offset,last_rotation=self.visual_rotation})
     else    
         self.network:sendToServer("server_clearBodyOnHold")
     end
@@ -427,11 +476,15 @@ function TrackBuilder.client_confirmLargeDelete( self, button_name )
     self.confirmClearGui = nil
 end
 
+function TrackBuilder.client_errorBuildMessage( self )
+    sm.gui.chatMessage( "#c71212ERROR: Failed to import object\nDid you use a bearing?\nThis error should never happen.#ffffff" )
+end
+
 function CenterBlueprint(blueprint, state, reset_trans)
     if state == nil then state = 1 end
     local smpos = sm.vec3.new(512,512,512)
     for _,body in pairs(blueprint.bodies) do
-        for _,child in pairs(body.childs) do
+        for _,child in pairs(blueprint.bodies[1].childs) do
             if smpos.x > child.pos.x or 
             smpos.y > child.pos.y or 
             smpos.z > child.pos.z then
@@ -441,15 +494,17 @@ function CenterBlueprint(blueprint, state, reset_trans)
             end
         end
     end
+
     for _,body in pairs(blueprint.bodies) do
         body.type = state
         body.transform.pos = {x=0,y=0,z=0}
-        if (body.transform ~= nil and reset_trans == nil) then
-            local r = body.transform.rot
-            local tmpq = sm.quat.new(r.x,r.y,r.z,r.w)
-            tmpq = sm.quat.round90( tmpq )
-            body.transform.rot = {tmpq.x,tmpq.y,tmpq.z,tmpq.w}
-        end
+        --[[
+        local r = body.transform.rot
+        local tmpq = sm.quat.new(r.x,r.y,r.z,r.w)
+        tmpq = sm.quat.round90( tmpq )
+        body.transform.rot = {tmpq.x,tmpq.y,tmpq.z,tmpq.w}
+        ]]
+        body.transform.rot = {0,0,0,1}
         for _,child in pairs(body.childs) do
             child.pos.x = child.pos.x - smpos.x
             child.pos.y = child.pos.y - smpos.y
@@ -460,8 +515,8 @@ function CenterBlueprint(blueprint, state, reset_trans)
 end
 
 function CenterBody(body)
-    local table = sm.creation.exportToTable(body, true, true)
-    local centered_blueprint = CenterBlueprint(table)
+    local _table = sm.creation.exportToTable(body, true, true)
+    local centered_blueprint = CenterBlueprint(_table)
     return centered_blueprint
 end
 
@@ -470,32 +525,48 @@ function TrackBuilder.server_getBlueprintData( self, data )
     if parent ~= nil and parent:getPublicData().creationString ~= nil then
         local blueprint_data = sm.json.parseJsonString(parent:getPublicData().creationString)
         blueprint_data = CenterBlueprint(blueprint_data)
-        self.network:sendToClient(data.player, "client_UpdateVisualBlueprint", blueprint_data)
+        local jstring = sm.json.writeJsonString(blueprint_data)
+        if #jstring > 50000 then
+            print("BLUEPRINT IS TOO LARGE")
+            print("Proceeding to chunk over multiple ticks...")
+            local chunk = "START"..string.sub(jstring,1,45000)
+            self.network:sendToClient(data.player, "client_UpdateVisualBlueprint", chunk)
+            self.divided_visual_update = {client = data.player, blueprint=jstring, start=45000}
+        else
+            self.network:sendToClient(data.player, "client_UpdateVisualBlueprint", blueprint_data)
+        end
     end
 end
 
 function TrackBuilder.server_clearBodyOnHold( self )
-    self.body_on_hold = nil
+    self.bodies_on_hold = {}
 end
 
 function TrackBuilder.server_DeleteAtPos( self, data )
-    local offset = self.shape.worldRotation * sm.vec3.new(1.625,0,-1.625)
-    if offset.z ~= 0 then
+    local smbound = data.bounds / 8
+    local radius = smbound.x < smbound.y and smbound.x or smbound.y
+    local tk = (data.last_rotation * data.bounds) * 0.125
+    tk = sm.vec3.new(math.abs(tk.x), math.abs(tk.y), math.abs(tk.z))
+    local offset = self.shape.worldRotation * sm.vec3.new(-tk.x,0,tk.y)
+    if offset.z > 0 then
         offset.y = offset.z
         offset.z = 0
     end
 
-    for i,vec in ipairs(self.valid_tile_positions) do
-        if vec == data.last_position then
+    for i,data in ipairs(self.valid_tile_positions) do
+        if data.position == data.last_position then
             table.remove(self.valid_tile_positions, i)
         end
     end
 
-    if self.body_on_hold == nil then
+    local deleted = 0
+    if #self.bodies_on_hold == 0 then
 
-        local ray_start = data.last_position + sm.vec3.new(0,0,12) + offset
-        local ray_end = data.last_position + sm.vec3.new(0,0,-2) + offset
-        local valid, result = sm.physics.raycast( ray_start, ray_end, nil, 4611 )
+        local ray_start = data.last_position + sm.vec3.new(0,0,12) - offset
+        local ray_end = data.last_position + sm.vec3.new(0,0,-2) - offset
+        if radius == nil then radius = 2 end
+
+        local valid, result = sm.physics.spherecast( ray_start, ray_end, radius - 1, nil, 4611 )
 
         if valid then
             if result.type == "body" then
@@ -503,52 +574,105 @@ function TrackBuilder.server_DeleteAtPos( self, data )
                 local min, max = body:getLocalAabb()
                 bounds = max - min
                 if math.abs(bounds.x * bounds.y) > 1000 then
-                    self.body_on_hold = body
+                    table.insert(self.bodies_on_hold, body)
                     self.network:sendToClient(data.player, "client_largeDeleteWarning")
                     return
                 else
                     for _,shape in pairs(body:getShapes()) do
                         shape:destroyShape(0)
+                        deleted = deleted + 1
                     end
                 end
+            -- local bounds = sm.vec3.zero()
+            -- local body_array = {}
+            -- for _,body in pairs(contents) do
+            --     if type(body) == "Body" then
+            --         local min, max = body:getLocalAabb()
+            --         bounds = bounds + (max - min)
+            --         table.insert(body_array, body)
+            --     end
+            -- end
+            -- if math.abs(bounds.x * bounds.y) > 1000 then
+            --     self.bodies_on_hold = body_array
+            --     self.network:sendToClient(data.player, "client_largeDeleteWarning")
+            --     return
+            -- else
+            --     for _,body in pairs(body_array) do
+            --         for _,shape in pairs(body:getShapes()) do
+            --             shape:destroyShape(0)
+            --         end
+            --     end
+            --     self.network:sendToClient(data.player, "client_deleteNoise")
+            -- end
             end
-            self.network:sendToClient(data.player, "client_deleteNoise")
         end
     else
-        if sm.exists(self.body_on_hold) then
-            for _,shape in pairs(self.body_on_hold:getShapes()) do
-                shape:destroyShape(0)
+        for _,body in pairs(self.bodies_on_hold) do
+            if sm.exists(body) then
+                for _,shape in pairs(body:getShapes()) do
+                    shape:destroyShape(0)
+                    deleted = deleted + 1
+                end
             end
-            self.network:sendToClient(data.player, "client_deleteNoise")
         end
-        self.body_on_hold = nil
+        self.bodies_on_hold = {}
     end
 
+    if deleted > 0 then self.network:sendToClient(data.player, "client_deleteNoise") end
     self:server_save()
 end
 
+-- function TrackBuilder.client_debug( self, data )
+--     if self.debug == nil then
+--         self.debug = {}
+--         self.debug[1] = sm.effect.createEffect("ShapeRenderable")
+--         self.debug[1]:setParameter("uuid", sm.uuid.new("628b2d61-5ceb-43e9-8334-a4135566df7a"))
+--         self.debug[1]:start()
+--         self.debug[2] = sm.effect.createEffect("ShapeRenderable")
+--         self.debug[2]:setParameter("uuid", sm.uuid.new("628b2d61-5ceb-43e9-8334-a4135566df7a"))
+--         self.debug[2]:start()
+--     end
+--     self.debug[1]:setPosition(data.ray_start)
+--     self.debug[2]:setPosition(data.ray_end)
+-- end
+
+-- self.network:sendToClients("client_debug", {ray_start=ray_start, ray_end=ray_end})
+
 function TrackBuilder.server_spawnTrack( self, data )
-    local offset = self.shape.worldRotation * sm.vec3.new(1.625,0,-1.625)
-    if offset.z ~= 0 then
+    local smbound = data.bounds / 8
+    local radius = smbound.x < smbound.y and smbound.x or smbound.y
+    local tk = (data.last_rotation * data.bounds) * 0.125
+    tk = sm.vec3.new(math.abs(tk.x), math.abs(tk.y), math.abs(tk.z))
+    local offset = self.shape.worldRotation * sm.vec3.new(-tk.x,0,tk.y)
+    if offset.z > 0 then
         offset.y = offset.z
         offset.z = 0
     end
-    local ray_start = data.last_position + sm.vec3.new(0,0,12) + offset
-    local ray_end = data.last_position + sm.vec3.new(0,0,-2) + offset
-    local valid, result = sm.physics.raycast( ray_start, ray_end, nil, 4611 )
+
+    local ray_start = data.last_position + sm.vec3.new(0,0,12) - offset
+    local ray_end = data.last_position + sm.vec3.new(0,0,-2) - offset
+    
+    if radius == nil then radius = 2 end
+    local valid, result = sm.physics.spherecast( ray_start, ray_end, radius - 1, nil, 4611 )
     if not valid then
         local parent = self.interactable:getParents()[data.index]
         if parent ~= nil and parent:getPublicData().creationString ~= nil then
             local blueprint_data = sm.json.parseJsonString(parent:getPublicData().creationString)
             blueprint_data = CenterBlueprint(blueprint_data)
-            local jsonString = sm.json.writeJsonString( blueprint_data )
-            bodies = sm.creation.importFromString(data.world, jsonString, data.last_position+data.offset, data.last_rotation, true )        
-            for _,body in pairs(bodies) do
-                body:setConvertibleToDynamic(false)
+            if true then -- Boxcast? AreaTrigger?
+                local jsonString = sm.json.writeJsonString( blueprint_data )
+                bodies = sm.creation.importFromString(data.world, jsonString, data.last_position+data.offset, data.last_rotation, true )
+                if bodies == nil then
+                    self.network:sendToClients("client_errorBuildMessage")
+                    return
+                end
+                for _,body in pairs(bodies) do
+                    body:setConvertibleToDynamic(false)
+                end
+                table.insert(self.valid_tile_positions, {position=data.last_position,bounds=data.bounds})
+                self.network:sendToClient(data.player, "client_buildNoise")
+                self:server_save()
             end
-            table.insert(self.valid_tile_positions, data.last_position)
-            self.network:sendToClient(data.player, "client_buildNoise")
-            self:server_save()
         else
             self.network:sendToClient(data.player, "client_errorBuildNoise")
         end
@@ -580,6 +704,21 @@ local glueing_positions = {
 local g_last_valid_obj = nil
 
 function TrackBuilder.server_onFixedUpdate( self, dt )
+    if self.divided_visual_update ~= nil then
+        if self.divided_visual_update.start >= #self.divided_visual_update.blueprint then
+            self.network:sendToClient(self.divided_visual_update.client, "client_UpdateVisualBlueprint", "END")
+            self.divided_visual_update = nil
+        else
+            local start = self.divided_visual_update.start + 1
+            local _end = start+45000
+            if _end > #self.divided_visual_update.blueprint then
+                _end = #self.divided_visual_update.blueprint + 1 
+            end
+            local chunk = string.sub(self.divided_visual_update.blueprint,start,_end)
+            self.network:sendToClient(self.divided_visual_update.client, "client_UpdateVisualBlueprint", chunk)
+            self.divided_visual_update.start = _end
+        end
+    end
     if self.pending_deletion then
         for _,body in pairs(sm.body.getAllBodies()) do
             for _,shape in pairs(body:getShapes()) do
@@ -595,9 +734,12 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
             return
         end
         if self.glue_counter > 0 then
-            local factor = sm.vec3.new(3.225,0,-3.225)
             
             local positions = {
+                sm.vec3.new(1.1,0,1.1),
+                sm.vec3.new(0,0,1.1),
+                sm.vec3.new(0.1,0,0.1),
+                sm.vec3.new(1.1,0,0),
                 sm.vec3.new(1,0,1),
                 sm.vec3.new(0,0,1),
                 sm.vec3.new(0,0,0),
@@ -606,7 +748,12 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
 
             if self.glue_index < #self.valid_tile_positions then
                 self.glue_index = self.glue_index + 1 
-                local position = self.valid_tile_positions[self.glue_index]
+                local data = self.valid_tile_positions[self.glue_index]
+                local position = data.position
+                local bounding_box = data.bounds
+                local radius = (bounding_box.x < bounding_box.y and bounding_box.x / 4 or bounding_box.y / 4) - 0.025
+
+                local factor = sm.vec3.new(radius,0,-radius)
 
                 for _,p_offset in pairs(positions) do
 
@@ -619,11 +766,11 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
                     end
 
                     local ray_start = position + sm.vec3.new(0,0,12) + offset
-                    local ray_end = position + sm.vec3.new(0,0,-2) + offset
+                    local ray_end = position + sm.vec3.new(0,0,-4) + offset
                     local valid, gridPos, obj = self:isValidPlacement(ray_end, ray_start)
 
                     if obj ~= nil then
-                        g_last_valid_obj = obj
+                        g_last_valid_obj = obj:getBody()
                     end
 
                     if valid then
@@ -635,18 +782,22 @@ function TrackBuilder.server_onFixedUpdate( self, dt )
                 self.glue_counter = self.glue_counter - 1
             end
         elseif self.glue_counter == 0 then
-            local position = self.valid_tile_positions[1]
-            local offset = self.shape.worldRotation * sm.vec3.new(1.625,0,-1.625)
+            local data = self.valid_tile_positions[1]
+            local position = data.position
+            local bounding_box = data.bounds
+            local radius = bounding_box.x < bounding_box.y and bounding_box.x / 8 or bounding_box.y / 8
+            local offset = self.shape.worldRotation * sm.vec3.new(radius,0,-radius)
             if offset.z ~= 0 then
                 offset.y = offset.z
                 offset.z = 0
             end
             local ray_start = position + sm.vec3.new(0,0,12) + offset
             local ray_end = position + sm.vec3.new(0,0,-2) + offset
-            local valid, gridPos, obj = self:isValidPlacement(ray_end, ray_start)
-            if sm.exists(obj) or sm.exists(g_last_valid_obj) then
-                if obj == nil then obj = g_last_valid_obj end
-                obj:getBody():setConvertibleToDynamic(true)
+            local valid, result = sm.physics.spherecast(ray_end, ray_start, radius, nil, 4611)
+            local body = result:getBody()
+            if sm.exists(body) or sm.exists(g_last_valid_obj) then
+                if body == nil then body = g_last_valid_obj end
+                body:setConvertibleToDynamic(true)
             else
                 if #self.valid_tile_positions > 0 then
                     table.remove(self.valid_tile_positions, 1)
@@ -681,11 +832,14 @@ function TrackBuilder.server_onCreate( self, dt )
         self.valid_tile_positions = {}
     end
 
-    self.body_on_hold = nil
+    self.trigger = sm.areaTrigger.createBox( sm.vec3.one(), self.shape.worldPosition, sm.quat.identity(), 1539 )
+    self.trigger:setShapeDetection( true )
+    self.bodies_on_hold = {}
     self.gluing = false
     self.pending_deletion = false
     self.glue_counter = 0
     self.glue_index = 0
+    self.divided_visual_update = nil
 end
 
 function TrackBuilder.server_save( self )

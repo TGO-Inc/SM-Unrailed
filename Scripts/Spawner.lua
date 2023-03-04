@@ -67,6 +67,6 @@ function Spawner.server_LoadBody(self, data)
         local pos = self.interactable:getShape():getWorldPosition()
         local npos = pos - (rot * min) + (rot * sm.vec3.new(2,2,0))
         --creation
-        sm.creation.importFromString(sm.world.getCurrentWorld(), creationS, npos, rot, false, false )
+        sm.creation.importFromString(sm.world.getCurrentWorld(), data.creationString, npos, rot, false, false )
     end
 end

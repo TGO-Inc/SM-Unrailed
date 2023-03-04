@@ -21,7 +21,7 @@
     },
     "96de8dce-5b70-4c49-9984-e2c2cd1093da":{
         "title": "Counter",
-        "description": "Special Counter for counting resources.\r\nU can connect counters together.\r\n1 tick Red to remove count"
+        "description": "Special Counter for counting resources.\r\nU can connect counters together.\r\n1 tick logic gate to remove count"
     },
     "16de3dce-5b50-4c49-9884-e2c2cd1093da":{
         "title": "Counter Display",
@@ -29,6 +29,10 @@
     },
     "bf55b475-3322-4464-830e-eea0c348beed":{
         "title": "Track Builder",
-        "description": "Connect many of these to the last counter in the chain to display single digit outputs"
+        "description": "Connect some of the creation selectors to this, and start building some awesome maps!"
+    },
+    "443258c2-bab2-4336-9fcd-2321c3676447":{
+        "title": "Shooter thing I found on the ground one day",
+        "description": "Sometimes it shoots, you know?"
     }
 }

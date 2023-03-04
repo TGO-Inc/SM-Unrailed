@@ -1,0 +1,18 @@
+{
+	"lodList": [
+		{
+			
+			"subMeshMap": {
+				"tapebot_body": {
+					"material": "DifAsgNor",
+					"textureList": [
+						"$CONTENT_DATA/Objects/Renderable/char_tapebot_body_dif-m.tga",
+						"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_body_asg.tga",
+						"$SURVIVAL_DATA/Character/Char_Tapebot/char_tapebot_body_nor.tga"
+					]
+				}
+			},
+			"mesh": "$SURVIVAL_DATA/Objects/Mesh/robotparts/obj_robotparts_tapebotshooter.fbx"
+		}
+	]
+}

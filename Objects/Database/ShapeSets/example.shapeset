@@ -70,7 +70,7 @@
 			"uuid": "86a33a0b-c1c1-4325-be81-c7f2ef9db769",
 			"name": "obj_interactive_spawner",
 			"renderable": "$GAME_DATA/Objects/Renderable/Interactive/obj_interactive_logicgate.rend",
-			"color": "c21d38",
+			"color": "ff0000",
 			"box": {
 				"x": 1,
 				"y": 1,
@@ -84,7 +84,7 @@
 			"physicsMaterial": "Mechanical",
 			"ratings": {
 				"density": 1,
-				"durability": 10,
+				"durability": 1,
 				"friction": 10,
 				"buoyancy": 10
 			},
@@ -263,6 +263,32 @@
 				"friction": 6,
 				"buoyancy": 1
 			}
+		},
+		{
+			"uuid": "443258c2-bab2-4336-9fcd-2321c3676447",
+			"name": "obj_interactive_explosive",
+			"renderable": "$CONTENT_DATA/Objects/Renderable/caution.rend",
+			"color": "cc820c",
+			"box": {
+				"x": 1,
+				"y": 2,
+				"z": 1
+			},
+			"scripted": {
+				"filename": "$CONTENT_DATA/Scripts/Explosive.lua",
+				"classname": "Explosive"
+			},
+			"rotationSet": "PropY",
+			"sticky": "-Y",
+			"physicsMaterial": "Mechanical",
+			"ratings": {
+				"density": 1,
+				"durability": 10,
+				"friction": 10,
+				"buoyancy": 10
+			},
+			"flammable": false,
+			"stackSize": 64
 		}
     ]
 }

@@ -17,10 +17,6 @@ function CreationSelector.server_onCreate( self )
 	self:server_Save()
 end
 
-function CreationSelector.client_onCreate( self  )
-	self.cl = {}
-end
-
 function CreationSelector.client_onFixedUpdate( self, dt )
 	local pos = self.shape:getWorldPosition()
 	local npos = (self.shape:getWorldRotation() * sm.vec3.new(0,0,2)) + pos
@@ -32,10 +28,6 @@ function CreationSelector.client_onFixedUpdate( self, dt )
 	else
 		self.interactable:setPoseWeight( 0, 0 )
 	end
-end
-
-function CreationSelector.client_onClientDataUpdate( self, params )
-	self.cl = params
 end
 
 function CreationSelector.client_onInteract( self, character, state )
@@ -52,15 +44,15 @@ function CreationSelector.client_onInteract( self, character, state )
 	end
 end
 
-function CreationSelector.server_Save(self)
+
+function CreationSelector.server_Save( self )
 	self.storage:save( self.saved )
 	self.interactable:setPublicData( self.saved )
-	self.network:setClientData( self.saved )
 end
 
 function CreationSelector.server_SaveBody(self, creation)
 	local string = sm.creation.exportToString(creation, true, true)
-	local shapes = creation:getShapes()
+	local shapes = creation:getCreationShapes()
 	for i=1,#shapes do
 		shapes[i]:destroyShape(0)
 	end
