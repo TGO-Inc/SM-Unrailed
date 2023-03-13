@@ -1,0 +1,18 @@
+{
+   "lodList" : [
+      {
+         "mesh" : "$GAME_DATA/Mesh/cube.mesh",
+         "minViewSize" : 15,
+         "subMeshList" : [
+            {
+               "material" : "DifAsgNor",
+               "textureList" : [
+                  "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_plastic_dif.tga",
+                  "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_plastic_asg.tga",
+                  "$SURVIVAL_DATA/Objects/Textures/Blocks/blk_plastic_nor.tga"
+               ]
+            }
+         ]
+      }
+   ]
+}
